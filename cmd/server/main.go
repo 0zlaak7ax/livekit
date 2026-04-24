@@ -75,6 +75,13 @@ func main() {
 				Name:  "dev",
 				Usage: "run in development mode (insecure, single node)",
 			},
+			// Added for local testing: allow overriding the bind address without a full config file
+			&cli.StringFlag{
+				Name:    "bind",
+				Usage:   "address to bind the server to (e.g. 0.0.0.0)",
+				EnvVars: []string{"LIVEKIT_BIND_ADDRESS"},
+				Value:   "0.0.0.0",
+			},
 		},
 		Action: startServer,
 	}
@@ -106,14 +113,14 @@ func startServer(c *cli.Context) error {
 	}
 
 	// Handle OS signals for graceful shutdown
-	// Also listen for SIGTERM so the server shuts down cleanly in containerized environments (e.g. Docker/k8s)
+	// Also listen for SIGTERM so the server shuts down cleanly in containerized environments
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		sig := <-sigChan
 		logger.Infow("received signal, shutting down", "signal", sig)
-		server.Stop(false)
+		server.Stop(true)
 	}()
 
 	return server.Start()
