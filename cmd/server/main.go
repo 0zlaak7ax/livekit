@@ -106,13 +106,14 @@ func startServer(c *cli.Context) error {
 	}
 
 	// Handle OS signals for graceful shutdown
+	// Also listen for SIGTERM so the server shuts down cleanly in containerized environments (e.g. Docker/k8s)
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		sig := <-sigChan
 		logger.Infow("received signal, shutting down", "signal", sig)
-		server.Stop(true)
+		server.Stop(false)
 	}()
 
 	return server.Start()
